@@ -33,7 +33,7 @@
     </div>
   </div>
   
-  <div v-else class="admin-layout">
+  <div v-else class="admin-layout" :data-theme="adminTheme">
     <aside class="admin-sider" :class="{ open: siderOpen }" @click.self="closeSider">
       <div class="logo clickable" @click="page='welcome'; closeSider()">Admin</div>
       <ul class="menu-list">
@@ -42,6 +42,8 @@
         <li :class="{active: page==='ad'}" @click="page='ad'; closeSider()">广告管理</li>
         <li :class="{active: page==='friend'}" @click="page='friend'; closeSider()">友链管理</li>
         <li :class="{active: page==='user'}" @click="page='user'; closeSider()">用户管理</li>
+        <li :class="{active: page==='cloudflare'}" @click="page='cloudflare'; closeSider()">反向代理</li>
+        <li :class="{active: page==='theme'}" @click="page='theme'; closeSider()">主题管理</li>
       </ul>
     </aside>
     <main class="admin-main">
@@ -82,6 +84,8 @@
         <AdManage v-if="page==='ad'" />
         <FriendLinkManage v-if="page==='friend'" />
         <UserManage v-if="page==='user'" />
+        <ReverseProxyManage v-if="page==='cloudflare'" />
+        <ThemeManage v-if="page==='theme'" @theme-change="onThemeChange" />
       </div>
       <footer class="admin-footer">
         <p class="admin-copyright">Copyright © 2025 Nav-Item | <a href="https://github.com/eooce/Nav-Item" target="_blank" class="footer-link">Powered by eooce</a></p>
@@ -98,6 +102,8 @@ import CardManage from './admin/CardManage.vue';
 import AdManage from './admin/AdManage.vue';
 import FriendLinkManage from './admin/FriendLinkManage.vue';
 import UserManage from './admin/UserManage.vue';
+import ReverseProxyManage from './admin/ReverseProxyManage.vue';
+import ThemeManage from './admin/ThemeManage.vue';
 
 const page = ref('welcome');
 const lastLoginTime = ref('');
@@ -109,6 +115,8 @@ const loading = ref(false);
 const loginError = ref('');
 const showPassword = ref(false);
 const siderOpen = ref(false);
+// NOTE: 从 localStorage 同步读取初始主题，防止刷新页面时出现颜色闪烁
+const adminTheme = ref(localStorage.getItem('adminTheme') || 'light');
 
 const pageTitle = computed(() => {
   switch (page.value) {
@@ -117,16 +125,43 @@ const pageTitle = computed(() => {
     case 'ad': return '广告管理';
     case 'friend': return '友链管理';
     case 'user': return '用户管理';
+    case 'cloudflare': return '反向代理';
+    case 'theme': return '主题管理';
     default: return '';
   }
 });
+
+/**
+ * 从后端加载主题设置并应用
+ */
+async function loadTheme() {
+  try {
+    const res = await fetch('/api/settings');
+    const data = await res.json();
+    if (data.code === 200 && data.data?.admin_theme) {
+      adminTheme.value = data.data.admin_theme;
+      localStorage.setItem('adminTheme', data.data.admin_theme);
+    }
+  } catch (_e) {
+    // ignore
+  }
+}
+
+/**
+ * ThemeManage 组件切换主题时的回调
+ * @param {string} theme - 'light' 或 'dark'
+ */
+function onThemeChange(theme) {
+  adminTheme.value = theme;
+  localStorage.setItem('adminTheme', theme);
+}
 
 onMounted(() => {
   const token = localStorage.getItem('token');
   isLoggedIn.value = !!token;
   if (isLoggedIn.value) {
-    // 拉取用户信息
     fetchLastLoginInfo();
+    loadTheme();
   }
 });
 async function fetchLastLoginInfo() {
@@ -186,6 +221,50 @@ function closeSider() {
 </script>
 
 <style scoped>
+/* ===================== CSS 变量系统 ===================== */
+/* NOTE: 浅色模式为默认值，深色模式通过 data-theme="dark" 选择器覆盖 */
+.admin-layout {
+  --admin-bg: #f5f6fa;
+  --admin-card-bg: #fff;
+  --admin-card-header-bg: #fafbfc;
+  --admin-text: #222;
+  --admin-text-secondary: #888;
+  --admin-border: #e3e6ef;
+  --admin-input-bg: #fff;
+  --admin-input-border: #d0d7e2;
+  --admin-sider-bg: #fff;
+  --admin-sider-shadow: rgba(0,0,0,0.06);
+  --admin-header-bg: #f5f6fa;
+  --admin-active-bg: #eaf1ff;
+  --admin-active-color: #2566d8;
+  --admin-hover-bg: #f5f6fa;
+  --admin-logo-color: #1349a6;
+  --admin-footer-color: #1d70cc;
+  --admin-welcome-card-border: #e3e6ef;
+  --admin-welcome-icon-bg: #f5f6fa;
+}
+.admin-layout[data-theme="dark"] {
+  --admin-bg: #181825;
+  --admin-card-bg: #1e1e2e;
+  --admin-card-header-bg: #232336;
+  --admin-text: #cdd6f4;
+  --admin-text-secondary: #7f849c;
+  --admin-border: #313244;
+  --admin-input-bg: #232336;
+  --admin-input-border: #45475a;
+  --admin-sider-bg: #1e1e2e;
+  --admin-sider-shadow: rgba(0,0,0,0.3);
+  --admin-header-bg: #181825;
+  --admin-active-bg: #2a2a40;
+  --admin-active-color: #89b4fa;
+  --admin-hover-bg: #2a2a40;
+  --admin-logo-color: #89b4fa;
+  --admin-footer-color: #89b4fa;
+  --admin-welcome-card-border: #313244;
+  --admin-welcome-icon-bg: #232336;
+}
+
+/* ===================== 登录页（不受主题影响） ===================== */
 .login-container {
   display: flex;
   justify-content: center;
@@ -194,7 +273,6 @@ function closeSider() {
   background: linear-gradient(135deg,#667eea,#764ba2);
   font-family: 'Segoe UI', Arial, sans-serif;
 }
-
 .login-card {
   background: #fff;
   border-radius: 12px;
@@ -203,7 +281,6 @@ function closeSider() {
   width: 400px;
   max-width: 90%;
 }
-
 .login-title {
   text-align: center;
   font-size: 2rem;
@@ -212,13 +289,11 @@ function closeSider() {
   margin-bottom: 32px;
   letter-spacing: 2px;
 }
-
 .login-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
-
 .login-input {
   padding: 12px 16px;
   border: 1px solid #d0d7e2;
@@ -230,12 +305,10 @@ function closeSider() {
   line-height: 48px;
   box-sizing: border-box;
 }
-
 .login-input:focus {
   outline: 2px solid #2566d8;
   border-color: #2566d8;
 }
-
 .login-btn {
   background: #2566d8;
   color: #fff;
@@ -247,24 +320,19 @@ function closeSider() {
   cursor: pointer;
   transition: background 0.2s;
 }
-
 .login-btn:hover:not(:disabled) {
   background: #174ea6;
 }
-
 .login-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
 }
-
 .login-buttons {
   display: flex;
   gap: 12px;
-  align-items: center;
 }
-
 .back-btn {
-  background: #f8f9fa;
+  background: #f5f5f5;
   color: #2b2b2b;
   border: 1px solid #dee2e6;
   border-radius: 8px;
@@ -279,171 +347,19 @@ function closeSider() {
   flex: 1;
   justify-content: center;
 }
-
 .back-btn:hover {
   background: #e9ecef;
   color: #7e42ff;
   border-color: #adb5bd;
 }
-
 .login-btn {
   flex: 2;
 }
-
 .login-error {
   color: #e74c3c;
   text-align: center;
   margin: 0;
   font-size: 14px;
-}
-
-.admin-layout {
-  display: flex;
-  min-height: 100vh;
-  background: #f5f6fa;
-  font-family: 'Segoe UI', Arial, sans-serif;
-}
-.admin-sider {
-  width: 180px;
-  background: #fff;
-  color: #222;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  padding-top: 32px;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.06);
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  z-index: 100;
-}
-.logo {
-  font-size: 2rem;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 32px;
-  letter-spacing: 2px;
-  color: #1349a6;
-  cursor: pointer;
-  user-select: none;
-  transition: color 0.2s;
-}
-.logo.clickable:hover {
-  color: #176efa;
-}
-.menu-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  flex: 1;
-}
-.menu-list li {
-  padding: 16px 32px;
-  cursor: pointer;
-  font-size: 16px;
-  border-left: 4px solid transparent;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
-  color: #222;
-}
-.menu-list li.active {
-  background: #eaf1ff;
-  border-left: 4px solid #2566d8;
-  color: #2566d8;
-  font-weight: bold;
-}
-.admin-main {
-  flex: 1;
-  background: #f5f6fa;
-  padding: 64px 0 0 180px;
-  min-width: 0;
-  overflow-x: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
-.admin-header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 64px;
-  padding: 0 48px 0 0;
-  background: #f5f6fa;
-  position: fixed;
-  top: 0;
-  left: 180px;
-  right: 0;
-  z-index: 101;
-  border-bottom: 1px solid #e3e6ef;
-}
-.header-title {
-  flex: 1;
-  text-align: center;
-  margin-left: 180px;
-  font-size: 1.5rem;
-  font-weight: 500;
-  letter-spacing: 2px;
-  color: #222;
-}
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.home-icon {
-  display: flex;
-  align-items: center;
-  margin-right: 18px;
-  cursor: pointer;
-  border-radius: 50%;
-  transition: background 0.2s;
-  padding: 4px;
-}
-.home-icon:hover {
-  background: #eaf1ff;
-}
-.btn.logout-btn {
-  background: #f7caca;
-  color: #e74c3c;
-  border: 1px solid #f7caca;
-  border-radius: 10px;
-  padding: 6px 10px;
-  font-size: 15px;
-  font-weight: 500;
-  margin: 0;
-  transition: background 0.2s, color 0.2s;
-}
-.btn.logout-btn:hover {
-  background: #e74c3c;
-  color: #fff;
-}
-.admin-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10px 0 0 0;
-  margin-top: 0;
-}
-.admin-footer {
-  margin-top: auto;
-  text-align: center;
-  padding: 2rem 0 1rem 0;
-  background: transparent;
-}
-.admin-copyright {
-  color: #1d70cc;
-  font-size: 14px;
-  margin: 0;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-}
-.footer-link {
-  color: #1d70cc;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.footer-link:hover {
-  color: #3218ed;
 }
 .password-input-wrapper {
   position: relative;
@@ -483,6 +399,165 @@ function closeSider() {
   height: 22px;
   pointer-events: none;
 }
+
+/* ===================== 后台布局（使用 CSS 变量） ===================== */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--admin-bg);
+  font-family: 'Segoe UI', Arial, sans-serif;
+  transition: background 0.3s;
+}
+.admin-sider {
+  width: 180px;
+  background: var(--admin-sider-bg);
+  color: var(--admin-text);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-top: 32px;
+  box-shadow: 2px 0 8px var(--admin-sider-shadow);
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 100;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.logo {
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 32px;
+  letter-spacing: 2px;
+  color: var(--admin-logo-color);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+}
+.logo.clickable:hover {
+  color: #176efa;
+}
+.menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+}
+.menu-list li {
+  padding: 16px 32px;
+  cursor: pointer;
+  font-size: 16px;
+  border-left: 4px solid transparent;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  color: var(--admin-text);
+}
+.menu-list li:hover {
+  background: var(--admin-hover-bg);
+}
+.menu-list li.active {
+  background: var(--admin-active-bg);
+  border-left: 4px solid var(--admin-active-color);
+  color: var(--admin-active-color);
+  font-weight: bold;
+}
+.admin-main {
+  flex: 1;
+  background: var(--admin-bg);
+  padding: 64px 0 0 180px;
+  min-width: 0;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  transition: background 0.3s;
+}
+.admin-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 64px;
+  padding: 0 48px 0 0;
+  background: var(--admin-header-bg);
+  position: fixed;
+  top: 0;
+  left: 180px;
+  right: 0;
+  z-index: 101;
+  border-bottom: 1px solid var(--admin-border);
+  transition: background 0.3s, border-color 0.3s;
+}
+.header-title {
+  flex: 1;
+  text-align: center;
+  margin-left: 180px;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 2px;
+  color: var(--admin-text);
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.home-icon {
+  display: flex;
+  align-items: center;
+  margin-right: 18px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.2s;
+  padding: 4px;
+}
+.home-icon:hover {
+  background: var(--admin-active-bg);
+}
+.btn.logout-btn {
+  background: #f7caca;
+  color: #e74c3c;
+  border: 1px solid #f7caca;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0;
+  transition: background 0.2s, color 0.2s;
+}
+.btn.logout-btn:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+.admin-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0 0 0;
+  margin-top: 0;
+}
+.admin-footer {
+  margin-top: auto;
+  text-align: center;
+  padding: 2rem 0 1rem 0;
+  background: transparent;
+}
+.admin-copyright {
+  color: var(--admin-footer-color);
+  font-size: 14px;
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.footer-link {
+  color: var(--admin-footer-color);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-link:hover {
+  color: #3218ed;
+}
+
+/* ===================== 欢迎页 ===================== */
 .welcome-page {
   display: flex;
   flex-direction: column;
@@ -493,7 +568,7 @@ function closeSider() {
   text-align: center;
   font-size: 2rem;
   font-weight: 600;
-  color: #222;
+  color: var(--admin-text);
   margin-bottom: 32px;
 }
 .welcome-cards {
@@ -501,7 +576,7 @@ function closeSider() {
   gap: 32px;
 }
 .welcome-card {
-  background: #fff;
+  background: var(--admin-card-bg);
   border-radius: 18px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   padding: 32px 40px;
@@ -509,12 +584,13 @@ function closeSider() {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  border: 1.5px solid #e3e6ef;
+  border: 1.5px solid var(--admin-welcome-card-border);
+  transition: background 0.3s, border-color 0.3s;
 }
 .welcome-icon {
   width: 48px;
   height: 48px;
-  background: #f5f6fa;
+  background: var(--admin-welcome-icon-bg);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -523,7 +599,7 @@ function closeSider() {
 }
 .welcome-label {
   font-size: 1.1rem;
-  color: #222;
+  color: var(--admin-text);
   margin-bottom: 8px;
 }
 .welcome-value {
@@ -532,6 +608,8 @@ function closeSider() {
   font-weight: 600;
   letter-spacing: 1px;
 }
+
+/* ===================== 响应式 ===================== */
 @media (max-width: 900px) {
   .welcome-cards {
     flex-direction: column;
@@ -554,9 +632,9 @@ function closeSider() {
     height: 100vh;
     z-index: 200;
     transform: translateX(-100%);
-    transition: transform 0.3s;
+    transition: transform 0.3s, background 0.3s;
     box-shadow: 2px 0 8px rgba(0,0,0,0.12);
-    background: #fff;
+    background: var(--admin-sider-bg);
   }
   .admin-sider.open {
     transform: translateX(0);
@@ -604,10 +682,9 @@ function closeSider() {
     border: none;
     font-size: 2rem;
     cursor: pointer;
-    color: #2566d8;
+    color: var(--admin-active-color);
     z-index: 300;
   }
-  /* 表单和按钮间距优化 */
   .input, .btn {
     margin-bottom: 8px;
   }
@@ -615,4 +692,258 @@ function closeSider() {
 .menu-toggle {
   display: none;
 }
-</style> 
+</style>
+
+<!-- NOTE: 非 scoped 样式，用于深色模式下覆盖所有子组件的通用颜色 -->
+<style>
+/* ============== 通用文字颜色 ============== */
+.admin-layout[data-theme="dark"] .page-title,
+.admin-layout[data-theme="dark"] .section-title,
+.admin-layout[data-theme="dark"] .header-content h2,
+.admin-layout[data-theme="dark"] .welcome-label,
+.admin-layout[data-theme="dark"] .form-group label,
+.admin-layout[data-theme="dark"] .order-label,
+.admin-layout[data-theme="dark"] .sub-menu-title,
+.admin-layout[data-theme="dark"] .empty-sub-menu,
+.admin-layout[data-theme="dark"] .menu-name-input,
+.admin-layout[data-theme="dark"] .sub-menu-name-input {
+  color: var(--admin-text) !important;
+}
+
+/* ============== 所有卡片/面板容器 ============== */
+.admin-layout[data-theme="dark"] .card-card,
+.admin-layout[data-theme="dark"] .menu-content,
+.admin-layout[data-theme="dark"] .ad-card,
+.admin-layout[data-theme="dark"] .friend-card,
+.admin-layout[data-theme="dark"] .user-card,
+.admin-layout[data-theme="dark"] .password-section {
+  background: var(--admin-card-bg) !important;
+  border-color: var(--admin-border) !important;
+}
+
+/* ============== 所有表格 ============== */
+.admin-layout[data-theme="dark"] .card-table,
+.admin-layout[data-theme="dark"] .ad-table,
+.admin-layout[data-theme="dark"] .friend-table {
+  background: var(--admin-card-bg) !important;
+  color: var(--admin-text) !important;
+}
+.admin-layout[data-theme="dark"] .card-table th,
+.admin-layout[data-theme="dark"] .ad-table th,
+.admin-layout[data-theme="dark"] .friend-table th {
+  background: var(--admin-card-header-bg) !important;
+  color: var(--admin-text) !important;
+  border-color: var(--admin-border) !important;
+}
+.admin-layout[data-theme="dark"] .card-table td,
+.admin-layout[data-theme="dark"] .ad-table td,
+.admin-layout[data-theme="dark"] .friend-table td {
+  color: var(--admin-text) !important;
+  border-color: var(--admin-border) !important;
+}
+
+/* 表格内的输入框 */
+.admin-layout[data-theme="dark"] .ad-table td input,
+.admin-layout[data-theme="dark"] .friend-table td input,
+.admin-layout[data-theme="dark"] .card-table td input {
+  background: var(--admin-input-bg) !important;
+  color: var(--admin-text) !important;
+  border-color: var(--admin-input-border) !important;
+}
+
+/* ============== 所有输入框和选择框 ============== */
+.admin-layout[data-theme="dark"] .input,
+.admin-layout[data-theme="dark"] .table-input,
+.admin-layout[data-theme="dark"] .menu-name-input,
+.admin-layout[data-theme="dark"] .order-input,
+.admin-layout[data-theme="dark"] .sub-name-input,
+.admin-layout[data-theme="dark"] .sub-order-input,
+.admin-layout[data-theme="dark"] select,
+.admin-layout[data-theme="dark"] select.input {
+  background: var(--admin-input-bg) !important;
+  color: var(--admin-text) !important;
+  border-color: var(--admin-input-border) !important;
+}
+/* select 下拉框的 option 在深色模式 */
+.admin-layout[data-theme="dark"] select option {
+  background: var(--admin-card-bg);
+  color: var(--admin-text);
+}
+/* 输入框 placeholder */
+.admin-layout[data-theme="dark"] .input::placeholder,
+.admin-layout[data-theme="dark"] .menu-name-input::placeholder,
+.admin-layout[data-theme="dark"] input::placeholder {
+  color: var(--admin-text-secondary) !important;
+}
+/* 输入框 focus 状态 */
+.admin-layout[data-theme="dark"] .menu-name-input:focus,
+.admin-layout[data-theme="dark"] .sub-menu-name-input:focus {
+  background: var(--admin-input-bg) !important;
+}
+
+/* ============== 栏目管理（MenuManage） ============== */
+/* 紫色渐变头部 → 深色模式改为暗色渐变 */
+.admin-layout[data-theme="dark"] .menu-header {
+  background: linear-gradient(135deg, #313244 0%, #45475a 100%) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+.admin-layout[data-theme="dark"] .menu-header .page-title {
+  color: #cdd6f4 !important;
+}
+/* 菜单项 */
+.admin-layout[data-theme="dark"] .main-menu {
+  background: var(--admin-card-bg) !important;
+}
+.admin-layout[data-theme="dark"] .menu-item {
+  background: var(--admin-card-bg) !important;
+  border-color: var(--admin-border) !important;
+}
+.admin-layout[data-theme="dark"] .menu-item:hover {
+  background: var(--admin-active-bg) !important;
+}
+/* 菜单图标保留渐变但调暗 */
+.admin-layout[data-theme="dark"] .menu-icon {
+  background: linear-gradient(135deg, #585b70 0%, #45475a 100%) !important;
+  color: #89b4fa !important;
+}
+/* 子菜单区域 */
+.admin-layout[data-theme="dark"] .sub-menu-section {
+  background: var(--admin-card-header-bg) !important;
+  border-color: var(--admin-border) !important;
+}
+.admin-layout[data-theme="dark"] .sub-menu-header {
+  background: var(--admin-card-header-bg) !important;
+  border-color: var(--admin-border) !important;
+}
+.admin-layout[data-theme="dark"] .sub-menu-title {
+  color: var(--admin-text-secondary) !important;
+}
+.admin-layout[data-theme="dark"] .sub-menu-item {
+  background: var(--admin-card-bg) !important;
+  border-color: var(--admin-border) !important;
+}
+.admin-layout[data-theme="dark"] .sub-menu-item::before {
+  background: var(--admin-border) !important;
+}
+.admin-layout[data-theme="dark"] .sub-menu-list::before {
+  background: linear-gradient(to bottom, var(--admin-border), var(--admin-border)) !important;
+}
+.admin-layout[data-theme="dark"] .sub-menu-icon {
+  background: linear-gradient(135deg, #1e7a47 0%, #166534 100%) !important;
+}
+.admin-layout[data-theme="dark"] .sub-menu-name-input {
+  color: var(--admin-text) !important;
+}
+.admin-layout[data-theme="dark"] .empty-sub-menu p {
+  color: #a6e3a1 !important;
+}
+/* 展开按钮 */
+.admin-layout[data-theme="dark"] .btn-icon.expand-btn {
+  background: var(--admin-card-header-bg) !important;
+  color: var(--admin-text) !important;
+  border: 1px solid var(--admin-border) !important;
+}
+/* 轮廓按钮 */
+.admin-layout[data-theme="dark"] .btn-outline {
+  color: #89b4fa !important;
+  border-color: #89b4fa !important;
+}
+.admin-layout[data-theme="dark"] .btn-outline:hover {
+  background: #89b4fa !important;
+  color: #1e1e2e !important;
+}
+
+/* ============== 广告管理（AdManage） ============== */
+.admin-layout[data-theme="dark"] .ad-add-block {
+  background: var(--admin-card-header-bg) !important;
+}
+.admin-layout[data-theme="dark"] .ad-add-block .section-title {
+  color: #89b4fa !important;
+}
+
+/* ============== 用户管理 ============== */
+.admin-layout[data-theme="dark"] .user-manage .section-title,
+.admin-layout[data-theme="dark"] .user-card label {
+  color: var(--admin-text) !important;
+}
+.admin-layout[data-theme="dark"] .user-card {
+  background: var(--admin-card-bg) !important;
+}
+
+/* ============== CloudflareManage ============== */
+.admin-layout[data-theme="dark"] .cf-card {
+  background: var(--admin-card-bg);
+  border-color: var(--admin-border);
+}
+.admin-layout[data-theme="dark"] .cf-card-header {
+  background: var(--admin-card-header-bg);
+  border-bottom-color: var(--admin-border);
+}
+.admin-layout[data-theme="dark"] .cf-card-title,
+.admin-layout[data-theme="dark"] .cf-form-label {
+  color: var(--admin-text);
+}
+.admin-layout[data-theme="dark"] .cf-desc,
+.admin-layout[data-theme="dark"] .cf-hint {
+  color: var(--admin-text-secondary);
+}
+.admin-layout[data-theme="dark"] .cf-form-group {
+  background: var(--admin-card-header-bg);
+  border-color: var(--admin-border);
+}
+.admin-layout[data-theme="dark"] .cf-form-input {
+  background: var(--admin-input-bg);
+  color: var(--admin-text);
+  border-color: var(--admin-input-border);
+}
+.admin-layout[data-theme="dark"] .cf-btn-secondary {
+  background: var(--admin-card-bg);
+  color: var(--admin-text);
+  border-color: var(--admin-input-border);
+}
+.admin-layout[data-theme="dark"] .cf-info-value {
+  background: var(--admin-card-header-bg);
+  color: var(--admin-text);
+}
+.admin-layout[data-theme="dark"] .cf-icon-btn {
+  color: var(--admin-text-secondary);
+}
+.admin-layout[data-theme="dark"] .cf-badge-secondary {
+  background: var(--admin-card-header-bg);
+  color: var(--admin-text-secondary);
+  border-color: var(--admin-border);
+}
+.admin-layout[data-theme="dark"] .cf-status-msg {
+  color: var(--admin-text-secondary);
+}
+.admin-layout[data-theme="dark"] .cf-info-label {
+  color: var(--admin-text-secondary);
+}
+
+/* ============== CaddyManage 专属 ============== */
+.admin-layout[data-theme="dark"] .caddy-rule-head {
+  color: var(--admin-text-secondary);
+}
+.admin-layout[data-theme="dark"] .cf-hint code {
+  background: var(--admin-card-header-bg);
+  color: var(--admin-text);
+}
+
+/* ============== 友链管理 ============== */
+.admin-layout[data-theme="dark"] .friend-form {
+  background: var(--admin-card-bg);
+  border-color: var(--admin-border);
+}
+.admin-layout[data-theme="dark"] .friend-form label {
+  color: var(--admin-text);
+}
+
+/* ============== 通用消息样式 ============== */
+.admin-layout[data-theme="dark"] .message.success {
+  color: #a6e3a1;
+}
+.admin-layout[data-theme="dark"] .message.error {
+  color: #f38ba8;
+}
+</style>
+

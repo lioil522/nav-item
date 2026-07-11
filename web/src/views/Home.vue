@@ -1,5 +1,5 @@
 <template>
-  <div class="home-container">
+  <div class="home-container" :style="bgStyle">
     <div class="menu-bar-fixed">
       <MenuBar 
         :menus="menus" 
@@ -124,6 +124,35 @@ const leftAds = ref([]);
 const rightAds = ref([]);
 const showFriendLinks = ref(false);
 const friendLinks = ref([]);
+const bgUrl = ref('');
+
+// NOTE: 同步从 localStorage 读取缓存的背景图，避免页面加载时闪烁默认壁纸
+try {
+  const cached = localStorage.getItem('siteSettings');
+  if (cached) {
+    const s = JSON.parse(cached);
+    const mobile = window.innerWidth <= 768;
+    if (mobile && s.bg_mobile_value) {
+      bgUrl.value = s.bg_mobile_value;
+    } else if (s.bg_desktop_value) {
+      bgUrl.value = s.bg_desktop_value;
+    }
+  }
+} catch (_e) {}
+
+/**
+ * 根据屏幕宽度判断是否为移动端
+ * @returns {boolean}
+ */
+const isMobile = () => window.innerWidth <= 768;
+
+/**
+ * 动态背景图样式
+ */
+const bgStyle = computed(() => {
+  if (!bgUrl.value) return {};
+  return { backgroundImage: `url('${bgUrl.value}')` };
+});
 
 // 聚合搜索配置
 const searchEngines = [
@@ -177,6 +206,34 @@ const filteredCards = computed(() => {
 });
 
 onMounted(async () => {
+  // NOTE: 从 API 拉取最新站点设置并更新 localStorage 缓存
+  try {
+    const settingsRes = await fetch('/api/settings');
+    const settingsData = await settingsRes.json();
+    if (settingsData.code === 200 && settingsData.data) {
+      const s = settingsData.data;
+      // 缓存到 localStorage 供下次加载时同步读取
+      localStorage.setItem('siteSettings', JSON.stringify(s));
+      // 动态背景图：移动端优先使用移动端图，无则回退桌面端
+      if (isMobile() && s.bg_mobile_value) {
+        bgUrl.value = s.bg_mobile_value;
+      } else if (s.bg_desktop_value) {
+        bgUrl.value = s.bg_desktop_value;
+      }
+      // 动态站点名称
+      if (s.site_name) {
+        document.title = s.site_name;
+      }
+      // 动态 Favicon
+      if (s.favicon_url) {
+        const link = document.querySelector('link[rel="icon"]');
+        if (link) link.href = s.favicon_url;
+      }
+    }
+  } catch (_e) {
+    // ignore, use cached or default background
+  }
+
   const res = await getMenus();
   menus.value = res.data;
   if (menus.value.length) {
@@ -341,14 +398,13 @@ function handleLogoError(event) {
 
 .home-container {
   min-height: 95vh;
-  background-image: url('https://main.ssss.nyc.mn/background.webp');
+  /* NOTE: 不设默认 background-image，由 JS 同步从 localStorage 初始化，避免闪烁 */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
   display: flex;
   flex-direction: column;
-  /* padding: 1rem 1rem; */
   position: relative;
   padding-top: 50px; 
 }

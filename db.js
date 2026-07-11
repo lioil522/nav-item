@@ -289,6 +289,30 @@ db.serialize(() => {
 
   db.run(`ALTER TABLE users ADD COLUMN last_login_time TEXT`, [], () => {});
   db.run(`ALTER TABLE users ADD COLUMN last_login_ip TEXT`, [], () => {});
+
+  // 站点设置表（主题、背景、Favicon 等）
+  db.run(`CREATE TABLE IF NOT EXISTS site_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+  )`);
+
+  // NOTE: 仅在表为空时插入默认值，避免覆盖用户已有配置
+  db.get('SELECT COUNT(*) as count FROM site_settings', (err, row) => {
+    if (row && row.count === 0) {
+      const defaults = [
+        ['site_name', '我的导航'],
+        ['admin_theme', 'light'],
+        ['bg_desktop_type', 'url'],
+        ['bg_desktop_value', 'https://main.ssss.nyc.mn/background.webp'],
+        ['bg_mobile_type', 'url'],
+        ['bg_mobile_value', ''],
+        ['favicon_url', 'https://img.icons8.com/lollipop/100/navigation.png']
+      ];
+      const stmt = db.prepare('INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)');
+      defaults.forEach(([k, v]) => stmt.run(k, v));
+      stmt.finalize();
+    }
+  });
 });
 
 

@@ -6,10 +6,23 @@ services:
     container_name: nav-item
     ports:
       - "3000:3000"
+      # Caddy 自动反代需要 80/443（HTTP-01 证书签发走 80，HTTPS 走 443）
+      # 若无需域名访问可删除以下两行
+      - "80:80"
+      - "443:443"
     environment:
       - PORT=3000             # 监听端口
       - ADMIN_USERNAME=admin  # 后台用户名
       - ADMIN_PASSWORD=123456 # 后台密码
+      # ===== Caddy 自动反向代理（可选，配置即部署）=====
+      # 填写域名后启动容器即自动申请 HTTPS 证书并反代到本应用，随后可直接用域名访问
+      - CADDY_DOMAIN=nav.example.com   # 你的域名（需提前解析到本机公网 IP）
+      # - CADDY_UPSTREAM=127.0.0.1:3000 # 反代目标，缺省即本应用，一般无需修改
+      - CADDY_EMAIL=admin@example.com  # ACME 邮箱（可选，用于证书到期提醒）
+      # 多域名/多后端写法（与 CADDY_DOMAIN 二选一或叠加）：
+      # - CADDY_SITES=a.example.com=127.0.0.1:3000,b.example.com=127.0.0.1:8080
+      # - CADDY_AUTOSTART=true          # 设为 false 可仅写入配置而不自动启动
     volumes:
-      - ./database:/app/database  # 持久化数据库文件
+      # 所有持久化数据都在 database 目录下：nav.db 数据库、uploads 上传文件、data 令牌与反代规则
+      - ./database:/app/database
     restart: unless-stopped

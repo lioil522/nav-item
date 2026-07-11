@@ -40,8 +40,10 @@ nav-item/
 ├── config.js             # 配置文件
 ├── db.js                 # 数据库初始化
 ├── package.json          # 后端依赖配置
-├── database/             # 数据库文件目录
-│   └── nav.db           # SQLite数据库文件
+├── database/             # 持久化数据目录（Docker 只需挂载此目录）
+│   ├── nav.db           # SQLite数据库文件
+│   ├── uploads/         # 上传的图标、背景图片
+│   └── data/            # CF 隧道令牌、Caddy 反代规则与 ACME 邮箱
 ├── routes/               # 后端路由
 │   ├── auth.js          # 认证相关路由
 │   ├── menu.js          # 菜单管理路由
@@ -49,9 +51,8 @@ nav-item/
 │   ├── ad.js            # 广告管理路由
 │   ├── friend.js        # 友链管理路由
 │   ├── user.js          # 用户管理路由
+│   ├── system.js        # 反向代理管理路由（cloudflared / caddy）
 │   └── upload.js        # 文件上传路由
-├── uploads/              # 上传文件目录
-│   └── default-favicon.png
 ├── web/                  # 前端项目目录
 │    ├── package.json      # 前端依赖配置
 │    ├── vite.config.mjs   # Vite配置文件
@@ -130,7 +131,6 @@ cd .. && npm start
      --name nav-item \
      -p 3000:3000 \
      -v $(pwd)/database:/app/database \
-     -v $(pwd)/uploads:/app/uploads \
      -e NODE_ENV=production \
      -e ADMIN_USERNAME=admin \
      -e ADMIN_PASSWORD=123456 \
@@ -146,14 +146,35 @@ services:
     container_name: nav-item
     ports:
       - "3000:3000"
+      # Caddy 自动反代需要 80/443（无需域名访问可删除以下两行）
+      - "80:80"
+      - "443:443"
     environment:
       - PORT=3000             # 监听端口
       - ADMIN_USERNAME=admin  # 后台用户名
       - ADMIN_PASSWORD=123456 # 后台密码
+      # ===== Caddy 自动反向代理（可选，配置即部署）=====
+      - CADDY_DOMAIN=nav.example.com   # 你的域名（需提前解析到本机公网 IP）
+      - CADDY_EMAIL=admin@example.com  # ACME 邮箱（可选）
     volumes:
-      - ./database:/app/database  # 持久化数据库
+      # 所有持久化数据都在 database 目录下：nav.db 数据库、uploads 上传文件、data 令牌与反代规则
+      - ./database:/app/database
     restart: unless-stopped
 ```
+
+#### Caddy 自动反向代理（域名直连）
+填好域名相关环境变量并映射 80/443 端口后，启动容器即自动申请 HTTPS 证书并反代到本应用，随后可直接用 `https://你的域名` 访问，无需进后台手动配置。
+
+| 环境变量 | 说明 |
+|----------|------|
+| `CADDY_DOMAIN` | 单个域名，upstream 缺省指向本应用 `127.0.0.1:PORT` |
+| `CADDY_UPSTREAM` | 可选，自定义反代目标（默认即本应用） |
+| `CADDY_EMAIL` | 可选，Let's Encrypt 证书到期提醒邮箱 |
+| `CADDY_SITES` | 多域名/多后端：`a.com=127.0.0.1:3000,b.com=127.0.0.1:8080` |
+| `CADDY_AUTOSTART` | 可选，设为 `false` 则仅写入配置不自动启动 |
+
+> 前提：域名已解析到本机公网 IP，且宿主机 80/443 端口未被占用、可从公网访问。配置会持久化到 `database/data/caddy.json`，之后也可在后台「反向代理」页查看/修改。
+
 ### 3: docker容器等使用docker image配合环境变量部署
 ```bash
 eooce/nav-item

@@ -190,7 +190,7 @@ async function deleteCard(id) {
 }
 
 .card-card {
-  background: white;
+  background: var(--admin-card-bg, white);
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
@@ -207,13 +207,13 @@ async function deleteCard(id) {
 .card-table td {
   padding: 8px 12px;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--admin-border, #e5e7eb);
 }
 
 .card-table th {
-  background: #f9fafb;
+  background: var(--admin-card-header-bg, #f9fafb);
   font-weight: 600;
-  color: #374151;
+  color: var(--admin-text, #222);
 }
 
 /* 表格列宽度设置 */
@@ -251,9 +251,9 @@ async function deleteCard(id) {
 .input {
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid #d0d7e2;
-  background: #fff;
-  color: #222;
+  border: 1px solid var(--admin-input-border, #d0d7e2);
+  background: var(--admin-input-bg, #fff);
+  color: var(--admin-text, #222);
   font-size: 0.9rem;
   transition: all 0.2s ease;
 }
@@ -278,9 +278,9 @@ async function deleteCard(id) {
   width: 100%;
   padding: 8px 4px;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
-  color: #222;
+  border: 1px solid var(--admin-border, #e2e8f0);
+  background: var(--admin-input-bg, #fff);
+  color: var(--admin-text, #222);
   font-size: 0.85rem;
   transition: all 0.2s ease;
 }

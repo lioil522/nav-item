@@ -300,7 +300,7 @@ db.serialize(() => {
   db.get('SELECT COUNT(*) as count FROM site_settings', (err, row) => {
     if (row && row.count === 0) {
       const defaults = [
-        ['site_name', '我的导航'],
+        ['site_name', '我的导航-个人专属导航页-Navitem'],
         ['admin_theme', 'light'],
         ['bg_desktop_type', 'url'],
         ['bg_desktop_value', 'https://main.ssss.nyc.mn/background.webp'],

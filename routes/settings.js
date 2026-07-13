@@ -13,16 +13,26 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 /**
+ * 根据上传目标返回文件名前缀，用于区分不同用途的图片（各自独立展示，互不混淆）
+ * @param {string} target - favicon | desktop | mobile
+ */
+const themePrefix = (target) =>
+  target === 'favicon' ? 'favicon-'
+    : target === 'mobile' ? 'bg-mobile-'
+    : 'bg-desktop-';
+
+/**
  * 背景图片上传的 multer 配置
- * 存储到 database/uploads/ 目录，文件名使用 bg- 前缀 + 时间戳
+ * 存储到 database/uploads/ 目录，文件名按用途使用不同前缀 + 时间戳
+ * NOTE: 前端在 file 之前追加 target 字段，故此处 req.body.target 可用
  */
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, uploadDir);
   },
-  filename: (_req, file, cb) => {
+  filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    cb(null, 'bg-' + Date.now() + ext);
+    cb(null, themePrefix(req.body.target) + Date.now() + ext);
   }
 });
 const upload = multer({ storage });
@@ -82,6 +92,43 @@ router.post('/upload-bg', authMiddleware, upload.single('bg'), (req, res) => {
   res.json({
     code: 200,
     data: { url: '/uploads/' + req.file.filename }
+  });
+});
+
+/**
+ * 列出某个目标（favicon/desktop/mobile）已上传的图片，仅返回该用途的图片
+ */
+router.get('/uploads', authMiddleware, (req, res) => {
+  const prefix = themePrefix(req.query.target);
+  fs.readdir(uploadDir, (err, files) => {
+    if (err) return res.status(500).json({ code: 500, message: err.message });
+    const items = (files || [])
+      .filter(f => f.startsWith(prefix))
+      .map(f => {
+        let mtime = 0;
+        try { mtime = fs.statSync(path.join(uploadDir, f)).mtimeMs; } catch (_e) { /* 忽略读取失败的文件 */ }
+        return { key: f, url: '/uploads/' + f, mtime };
+      })
+      // 按修改时间倒序，最新的排在前面
+      .sort((a, b) => b.mtime - a.mtime);
+    res.json({ code: 200, data: items });
+  });
+});
+
+/**
+ * 删除一张已上传的主题图片（仅允许 bg-/favicon- 前缀，避免误删卡片 logo 等）
+ */
+router.delete('/uploads/:key', authMiddleware, (req, res) => {
+  const key = req.params.key;
+  if (!key || !(key.startsWith('bg-') || key.startsWith('favicon-')) || key.includes('/') || key.includes('..')) {
+    return res.status(400).json({ code: 400, message: '非法文件名' });
+  }
+  fs.unlink(path.join(uploadDir, key), (err) => {
+    if (err) {
+      if (err.code === 'ENOENT') return res.json({ code: 200, message: '已删除' });
+      return res.status(500).json({ code: 500, message: err.message });
+    }
+    res.json({ code: 200, message: '已删除' });
   });
 });
 

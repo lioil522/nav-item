@@ -87,6 +87,13 @@ nav-item/
 - `PORT`: 服务器端口号（默认: 3000）
 - `ADMIN_USERNAME`: 管理员用户名（默认: admin）
 - `ADMIN_PASSWORD`: 管理员密码（默认: 123456）
+- `JWT_SECRET`: JWT 签名密钥（**生产环境务必设为强随机字符串**；不设则用内置默认值）
+- `TOKEN_TTL_HOURS`: 登录 token 有效期（小时，默认 `168` = 7 天）
+
+### 🔐 登录与会话
+- 登录采用 JWT，token 默认有效期 **7 天**（可用 `TOKEN_TTL_HOURS` 调整）。
+- token 过期或失效后，前端会**自动跳回登录页**重新登录即可，**无需清除浏览器「网站数据」**。
+- 修改 `JWT_SECRET` 后，已签发的旧 token 会全部失效，需要重新登录一次。
 
 ### 数据库配置
 系统使用 SQLite 数据库，数据库文件会自动创建在项目/database/目录下，使用docker部署请挂载/app/database目录实现数据持久化

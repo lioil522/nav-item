@@ -7,6 +7,8 @@ module.exports = {
   },
   server: {
     port: process.env.PORT || 3000,
-    jwtSecret: process.env.JWT_SECRET || 'nav-item-jwt-secret-2024-secure-key'
+    jwtSecret: process.env.JWT_SECRET || 'nav-item-jwt-secret-2024-secure-key',
+    // token 有效期（小时），默认 7 天，可用环境变量 TOKEN_TTL_HOURS 覆盖
+    tokenTtlHours: parseInt(process.env.TOKEN_TTL_HOURS) || 24 * 7
   }
 }; 

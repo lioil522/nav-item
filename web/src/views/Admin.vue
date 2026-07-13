@@ -95,8 +95,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { login } from '../api';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { login, getMe } from '../api';
 import MenuManage from './admin/MenuManage.vue';
 import CardManage from './admin/CardManage.vue';
 import AdManage from './admin/AdManage.vue';
@@ -156,7 +156,14 @@ function onThemeChange(theme) {
   localStorage.setItem('adminTheme', theme);
 }
 
+// token 失效（过期/无效）时的统一处理：清除本地 token 并回到登录页
+function handleUnauthorized() {
+  localStorage.removeItem('token');
+  isLoggedIn.value = false;
+}
+
 onMounted(() => {
+  window.addEventListener('auth:unauthorized', handleUnauthorized);
   const token = localStorage.getItem('token');
   isLoggedIn.value = !!token;
   if (isLoggedIn.value) {
@@ -164,16 +171,22 @@ onMounted(() => {
     loadTheme();
   }
 });
+
+onUnmounted(() => {
+  window.removeEventListener('auth:unauthorized', handleUnauthorized);
+});
+
 async function fetchLastLoginInfo() {
   try {
-    const res = await fetch('/api/users/me', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-    if (res.ok) {
-      const data = await res.json();
-      lastLoginTime.value = data.last_login_time || '';
-      lastLoginIp.value = data.last_login_ip || '';
-    }
+    const { data } = await getMe();
+    lastLoginTime.value = data.last_login_time || '';
+    lastLoginIp.value = data.last_login_ip || '';
   } catch (error) {
-    console.error('获取用户信息失败:', error);
+    // 401 已由 axios 拦截器统一处理（清除 token 并触发 auth:unauthorized）。
+    // 其它错误仅记录日志，不影响页面。
+    if (error.response?.status !== 401) {
+      console.error('获取用户信息失败:', error);
+    }
   }
 }
 

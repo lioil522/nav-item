@@ -2,9 +2,10 @@ const express = require('express');
 const db = require('../db');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const config = require('../config');
 const router = express.Router();
 
-const JWT_SECRET = 'your_jwt_secret_key';
+const JWT_SECRET = config.server.jwtSecret;
 
 function getClientIp(req) {
   let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
@@ -42,7 +43,7 @@ router.post('/login', (req, res) => {
         const now = getShanghaiTime();
         const ip = getClientIp(req);
         db.run('UPDATE users SET last_login_time=?, last_login_ip=? WHERE id=?', [now, ip, user.id]);
-        const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '2h' });
+        const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: config.server.tokenTtlHours * 3600 });
         res.json({ token, lastLoginTime, lastLoginIp });
       } else {
         res.status(401).json({ error: '用户名或密码错误' });

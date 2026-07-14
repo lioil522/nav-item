@@ -105,7 +105,7 @@ nav-item/
 
 #### 1. 克隆项目
 ```bash
-git clone https://github.com/eooce/nav-Item.git
+git clone https://github.com/lioil522/nav-Item.git
 cd nav-item
 ```
 
@@ -141,7 +141,7 @@ cd .. && npm start
      -e NODE_ENV=production \
      -e ADMIN_USERNAME=admin \
      -e ADMIN_PASSWORD=123456 \
-     eooce/nav-item
+     ghcr.io/lioil522/nav-item:latest
    ```
 ### 2: docker-compose.yaml 部署
 ```bash
@@ -149,7 +149,7 @@ version: '3'
 
 services:
   nav-item:
-    image: eooce/nav-item
+    image: ghcr.io/lioil522/nav-item:latest
     container_name: nav-item
     ports:
       - "3000:3000"

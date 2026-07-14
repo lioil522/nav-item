@@ -2,7 +2,7 @@ version: '3'
 
 services:
   nav-item:
-    image: eooce/nav-item
+    image: ghcr.io/lioil522/nav-item:latest
     container_name: nav-item
     ports:
       - "3000:3000"

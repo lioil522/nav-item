@@ -42,7 +42,6 @@
         <li :class="{active: page==='ad'}" @click="page='ad'; closeSider()">广告管理</li>
         <li :class="{active: page==='friend'}" @click="page='friend'; closeSider()">友链管理</li>
         <li :class="{active: page==='user'}" @click="page='user'; closeSider()">用户管理</li>
-        <li :class="{active: page==='cloudflare'}" @click="page='cloudflare'; closeSider()">反向代理</li>
         <li :class="{active: page==='theme'}" @click="page='theme'; closeSider()">主题管理</li>
       </ul>
     </aside>
@@ -84,7 +83,6 @@
         <AdManage v-if="page==='ad'" />
         <FriendLinkManage v-if="page==='friend'" />
         <UserManage v-if="page==='user'" />
-        <ReverseProxyManage v-if="page==='cloudflare'" />
         <ThemeManage v-if="page==='theme'" @theme-change="onThemeChange" />
       </div>
       <footer class="admin-footer">
@@ -102,7 +100,6 @@ import CardManage from './admin/CardManage.vue';
 import AdManage from './admin/AdManage.vue';
 import FriendLinkManage from './admin/FriendLinkManage.vue';
 import UserManage from './admin/UserManage.vue';
-import ReverseProxyManage from './admin/ReverseProxyManage.vue';
 import ThemeManage from './admin/ThemeManage.vue';
 
 const page = ref('welcome');
@@ -125,7 +122,6 @@ const pageTitle = computed(() => {
     case 'ad': return '广告管理';
     case 'friend': return '友链管理';
     case 'user': return '用户管理';
-    case 'cloudflare': return '反向代理';
     case 'theme': return '主题管理';
     default: return '';
   }
@@ -881,65 +877,6 @@ function closeSider() {
 }
 .admin-layout[data-theme="dark"] .user-card {
   background: var(--admin-card-bg) !important;
-}
-
-/* ============== CloudflareManage ============== */
-.admin-layout[data-theme="dark"] .cf-card {
-  background: var(--admin-card-bg);
-  border-color: var(--admin-border);
-}
-.admin-layout[data-theme="dark"] .cf-card-header {
-  background: var(--admin-card-header-bg);
-  border-bottom-color: var(--admin-border);
-}
-.admin-layout[data-theme="dark"] .cf-card-title,
-.admin-layout[data-theme="dark"] .cf-form-label {
-  color: var(--admin-text);
-}
-.admin-layout[data-theme="dark"] .cf-desc,
-.admin-layout[data-theme="dark"] .cf-hint {
-  color: var(--admin-text-secondary);
-}
-.admin-layout[data-theme="dark"] .cf-form-group {
-  background: var(--admin-card-header-bg);
-  border-color: var(--admin-border);
-}
-.admin-layout[data-theme="dark"] .cf-form-input {
-  background: var(--admin-input-bg);
-  color: var(--admin-text);
-  border-color: var(--admin-input-border);
-}
-.admin-layout[data-theme="dark"] .cf-btn-secondary {
-  background: var(--admin-card-bg);
-  color: var(--admin-text);
-  border-color: var(--admin-input-border);
-}
-.admin-layout[data-theme="dark"] .cf-info-value {
-  background: var(--admin-card-header-bg);
-  color: var(--admin-text);
-}
-.admin-layout[data-theme="dark"] .cf-icon-btn {
-  color: var(--admin-text-secondary);
-}
-.admin-layout[data-theme="dark"] .cf-badge-secondary {
-  background: var(--admin-card-header-bg);
-  color: var(--admin-text-secondary);
-  border-color: var(--admin-border);
-}
-.admin-layout[data-theme="dark"] .cf-status-msg {
-  color: var(--admin-text-secondary);
-}
-.admin-layout[data-theme="dark"] .cf-info-label {
-  color: var(--admin-text-secondary);
-}
-
-/* ============== CaddyManage 专属 ============== */
-.admin-layout[data-theme="dark"] .caddy-rule-head {
-  color: var(--admin-text-secondary);
-}
-.admin-layout[data-theme="dark"] .cf-hint code {
-  background: var(--admin-card-header-bg);
-  color: var(--admin-text);
 }
 
 /* ============== 友链管理 ============== */

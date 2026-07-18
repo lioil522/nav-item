@@ -10,7 +10,6 @@ on:
       - 'db.js'
       - 'web/**'
       - 'routes/**'
-      - 'utils/**'
   pull_request:
     branches: [ main ]
   workflow_dispatch:

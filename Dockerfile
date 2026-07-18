@@ -14,17 +14,8 @@ RUN npm run build
 FROM node:20-alpine3.20 AS production
 
 RUN apk add --no-cache \
-    sqlite curl caddy \
-    && rm -rf /var/cache/apk/* \
-    && ARCH=$(uname -m) \
-    && case "$ARCH" in \
-      x86_64) cloudflared_arch="amd64" ;; \
-      aarch64) cloudflared_arch="arm64" ;; \
-      armv7l) cloudflared_arch="arm" ;; \
-      *) cloudflared_arch="amd64" ;; \
-    esac \
-    && curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${cloudflared_arch}" -o /usr/local/bin/cloudflared \
-    && chmod +x /usr/local/bin/cloudflared
+    sqlite \
+    && rm -rf /var/cache/apk/*
 
 WORKDIR /app
 
@@ -36,7 +27,6 @@ RUN npm install
 
 COPY app.js config.js db.js ./
 COPY routes/ ./routes/
-COPY utils/ ./utils/
 
 COPY --from=frontend-builder /app/dist ./web/dist
 

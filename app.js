@@ -10,13 +10,14 @@ const adRoutes = require('./routes/ad');
 const friendRoutes = require('./routes/friend');
 const userRoutes = require('./routes/user');
 const settingsRoutes = require('./routes/settings');
+const backupRoutes = require('./routes/backup');
 const compression = require('compression');
 const app = express();
 
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 app.use(compression());
 app.use('/uploads', express.static(path.join(__dirname, 'database/uploads')));
 app.use(express.static(path.join(__dirname, 'web/dist')));
@@ -42,6 +43,7 @@ app.use('/api/ads', adRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/backup', backupRoutes);
 
 app.listen(PORT, () => {
   console.log(`server is running at http://localhost:${PORT}`);

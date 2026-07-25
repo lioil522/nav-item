@@ -62,35 +62,37 @@ nav-item/
 │   ├── friend.js         # 友链管理路由
 │   ├── user.js           # 用户管理路由
 │   ├── settings.js       # 站点设置路由（主题等）
+│   ├── backup.js         # 数据备份 / 迁移路由（导出 / 导入 JSON）
 │   └── upload.js         # 文件上传路由
 ├── web/                  # 前端项目目录
 │   ├── package.json      # 前端依赖配置
-│   ├── vite.config.mjs   # Vite配置文件
-│   ├── index.html        # HTML入口文件
+│   ├── vite.config.mjs   # Vite 构建配置
+│   ├── index.html        # HTML 入口文件
 │   ├── public/           # 静态资源
-│   │   ├── background.webp
-│   │   ├── default-favicon.png
-│   │   └── robots.txt
+│   │   ├── background.webp        # 默认背景图
+│   │   ├── default-favicon.png    # 默认站点图标
+│   │   └── robots.txt             # 搜索引擎抓取规则
 │   └── src/              # 前端源码
-│       ├── main.js       # Vue应用入口
+│       ├── main.js       # Vue 应用入口
 │       ├── router.js     # 路由配置
-│       ├── api.js        # API接口封装
+│       ├── api.js        # API 接口封装
 │       ├── App.vue       # 根组件
 │       ├── components/   # 公共组件
-│       │   ├── MenuBar.vue
-│       │   └── CardGrid.vue
+│       │   ├── MenuBar.vue         # 顶部菜单栏组件
+│       │   └── CardGrid.vue        # 卡片网格组件
 │       └── views/        # 页面组件
-│           ├── Home.vue  # 首页
-│           ├── Admin.vue # 后台管理
+│           ├── Home.vue  # 首页导航
+│           ├── Admin.vue # 后台管理主框架
 │           └── admin/    # 后台管理子页面
-│               ├── MenuManage.vue
-│               ├── CardManage.vue
-│               ├── AdManage.vue
-│               ├── FriendLinkManage.vue
-│               ├── UserManage.vue
-│               └── ThemeManage.vue
+│               ├── MenuManage.vue         # 栏目管理
+│               ├── CardManage.vue         # 卡片管理
+│               ├── AdManage.vue           # 广告管理
+│               ├── FriendLinkManage.vue   # 友链管理
+│               ├── UserManage.vue         # 用户管理
+│               ├── ThemeManage.vue        # 主题与外观设置
+│               └── BackupManage.vue       # 数据备份 / 迁移页面
 ├── docker-compose.yml    # Docker Compose 部署配置
-├── Dockerfile            # Docker构建文件
+├── Dockerfile            # Docker 镜像构建文件
 ```
 
 ## ⚙️ 环境变量及配置说明

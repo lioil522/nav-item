@@ -5,6 +5,7 @@ const authMiddleware = require('./authMiddleware');
 
 const BACKUP_VERSION = 1;
 // 允许导入/导出的表 —— 顺序即为导入时的写入顺序（先父后子）
+// 不含 users：用户账号（密码 hash）不参与备份，导入也不会动它
 const TABLES = [
   'menus',
   'sub_menus',
@@ -12,7 +13,6 @@ const TABLES = [
   'ads',
   'friends',
   'site_settings',
-  'users',
 ];
 
 function all(sql, params = []) {
@@ -32,8 +32,8 @@ function run(sql, params = []) {
 
 /**
  * 导出所有配置数据为 JSON
- * 包含菜单、子菜单、卡片、广告、友链、站点设置、用户账号（含密码 hash）
- * 不包含 uploads 目录下的图片文件
+ * 包含菜单、子菜单、卡片、广告、友链、站点设置
+ * 不包含用户账号，也不包含 uploads 目录下的图片文件
  */
 router.get('/export', authMiddleware, async (_req, res) => {
   try {
@@ -58,8 +58,8 @@ router.get('/export', authMiddleware, async (_req, res) => {
 
 /**
  * 导入配置数据（会清空现有数据后写入）
- * body: { data: {menus, sub_menus, cards, ads, friends, site_settings, users} }
- * 用户表将被完全替换（含密码 hash），导入完成后需用备份时的账号密码登录
+ * body: { data: {menus, sub_menus, cards, ads, friends, site_settings} }
+ * 用户表不受影响，导入后仍用当前账号密码登录
  */
 router.post('/import', authMiddleware, async (req, res) => {
   const body = req.body || {};
@@ -73,8 +73,8 @@ router.post('/import', authMiddleware, async (req, res) => {
     await run('BEGIN');
     // 关掉外键约束以简化清空顺序
     await run('PRAGMA foreign_keys = OFF');
-    // 先删子表再删父表，避免外键触发
-    const clearOrder = ['cards', 'sub_menus', 'menus', 'ads', 'friends', 'site_settings', 'users'];
+    // 先删子表再删父表，避免外键触发；users 不在清空范围内
+    const clearOrder = ['cards', 'sub_menus', 'menus', 'ads', 'friends', 'site_settings'];
     for (const t of clearOrder) {
       await run(`DELETE FROM ${t}`);
       // 重置自增序列（若存在 sqlite_sequence 记录）
